@@ -26,6 +26,7 @@ export default function AddStockModal({ isOpen, onClose, userId, userName }: Add
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [invoiceDate, setInvoiceDate] = useState('');
   const [supplierContact, setSupplierContact] = useState('');
+  const [purchasePrice, setPurchasePrice] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -63,6 +64,7 @@ export default function AddStockModal({ isOpen, onClose, userId, userName }: Add
         invoiceNumber: invoiceNumber.trim(),
         invoiceDate,
         supplierContact: supplierContact.trim() || undefined,
+        purchasePrice: parseFloat(purchasePrice) || undefined,
       }
     );
 
@@ -71,6 +73,7 @@ export default function AddStockModal({ isOpen, onClose, userId, userName }: Add
     if (success) {
       onClose();
       setQuantity('');
+      setPurchasePrice('');
       setMaterialType('');
       setSupplierName('');
       setInvoiceNumber('');
@@ -181,7 +184,7 @@ export default function AddStockModal({ isOpen, onClose, userId, userName }: Add
           {/* Quantity */}
           <div>
             <label className="label-caps text-on-surface-variant block mb-2">
-              Quantity ({material === 'leather' ? 'sqm' : 'pieces'})
+              Quantity ({material === 'leather' ? 'sqf' : 'pieces'})
             </label>
             <input
               type="number"
@@ -194,6 +197,39 @@ export default function AddStockModal({ isOpen, onClose, userId, userName }: Add
               required
             />
           </div>
+
+          {/* Purchase Price */}
+          <div>
+            <label className="label-caps text-on-surface-variant block mb-2">
+              Purchase Price {material === 'footbed' ? '(per pair)' : '(per unit)'} *
+            </label>
+            <input
+              type="number"
+              value={purchasePrice}
+              onChange={(e) => setPurchasePrice(e.target.value)}
+              placeholder={material === 'footbed' ? 'Enter price per pair' : 'Enter price per unit'}
+              step="0.01"
+              min="0"
+              className="input-field"
+              required
+            />
+            {material === 'footbed' && (
+              <p className="text-xs text-on-surface-variant mt-1">
+                Footbed is sold in pairs. Total cost = (Qty ÷ 2) × Price per pair
+              </p>
+            )}
+          </div>
+
+          {quantity && purchasePrice && (
+            <div className="flex justify-between items-center p-3 bg-leather-tan/10 rounded-lg border border-leather-tan/20">
+              <span className="text-sm font-medium text-on-surface">Total Cost:</span>
+              <span className="text-lg font-bold text-leather-tan">
+                ₹{material === 'footbed'
+                  ? ((parseFloat(quantity) / 2) * parseFloat(purchasePrice)).toFixed(2)
+                  : (parseFloat(quantity) * parseFloat(purchasePrice)).toFixed(2)}
+              </span>
+            </div>
+          )}
 
           {/* Supplier Details */}
           <div className="space-y-4 p-4 bg-surface-container-low rounded-xl border border-outline-variant/30">

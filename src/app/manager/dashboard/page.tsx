@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Download } from 'lucide-react';
+import { Download, Package, X, Calendar } from 'lucide-react';
 import StatCard from '@/components/ui/StatCard';
 import ProductionTable from '@/components/ui/ProductionTable';
 import { getProductionLogs, ProductionLog } from '@/services/production';
@@ -11,11 +11,13 @@ import { getDateRange } from '@/utils/dateHelpers';
 import { exportToExcel, exportToPDF } from '@/utils/export';
 import { User } from '@/store/authStore';
 
-type Period = 'today' | 'week' | 'month';
+type Period = 'today' | 'week' | 'month' | 'custom';
+type MaterialType = 'leather' | 'buckle' | 'footbed';
 
 export default function ManagerDashboard() {
   // Auth state managed via restoreSession in layout
   const [period, setPeriod] = useState<Period>('today');
+  const [customDate, setCustomDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [logs, setLogs] = useState<ProductionLog[]>([]);
   const [totalLogs, setTotalLogs] = useState(0);
   const [stock, setStock] = useState<any>(null);
@@ -24,11 +26,12 @@ export default function ManagerDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 20;
+  const [breakdownModal, setBreakdownModal] = useState<{ open: boolean; material: MaterialType | null }>({ open: false, material: null });
 
   const fetchData = async () => {
     setIsLoading(true);
 
-    const range = getDateRange(period);
+    const range = getDateRange(period, period === 'custom' ? customDate : undefined);
     const filter: any = { startDate: range.startDate, endDate: range.endDate };
     if (selectedWorker !== 'all') {
       filter.workerId = selectedWorker;
@@ -49,13 +52,32 @@ export default function ManagerDashboard() {
 
   useEffect(() => {
     fetchData();
-  }, [period, selectedWorker, page]);
+  }, [period, customDate, selectedWorker, page]);
 
   // Calculate stats
   const totalPairs = logs.reduce((sum, l) => sum + l.quantityPairs, 0);
   const totalLeather = logs.reduce((sum, l) => sum + l.leatherDeductedSqf, 0);
   const totalBuckles = logs.reduce((sum, l) => sum + l.buckleDeducted, 0);
   const totalFootbeds = logs.reduce((sum, l) => sum + l.footbedDeducted, 0);
+
+  // Calculate breakdown by category
+  const leatherBreakdown = logs.reduce((acc: Record<string, number>, log) => {
+    const type = log.leatherType || 'Unknown';
+    acc[type] = (acc[type] || 0) + log.leatherDeductedSqf;
+    return acc;
+  }, {});
+
+  const buckleBreakdown = logs.reduce((acc: Record<string, number>, log) => {
+    const type = log.buckleType || 'Unknown';
+    acc[type] = (acc[type] || 0) + log.buckleDeducted;
+    return acc;
+  }, {});
+
+  const footbedBreakdown = logs.reduce((acc: Record<string, number>, log) => {
+    const key = `${log.footbedGender} EU ${log.footbedEuSize} - ${log.footbedType}`;
+    acc[key] = (acc[key] || 0) + log.footbedDeducted;
+    return acc;
+  }, {});
 
   const handleExport = (format: 'excel' | 'pdf') => {
     const data = {
@@ -85,21 +107,39 @@ export default function ManagerDashboard() {
           value={totalPairs}
           sublabel={`${period.toUpperCase()} period`}
         />
-        <StatCard
-          label="Leather Used"
-          value={`${totalLeather.toFixed(1)} sqm`}
-          sublabel="Total consumption"
-        />
-        <StatCard
-          label="Buckles Used"
-          value={`${totalBuckles} pcs`}
-          sublabel="Total consumption"
-        />
-        <StatCard
-          label="Footbeds Used"
-          value={`${totalFootbeds} pcs`}
-          sublabel="Total consumption"
-        />
+        <div
+          onClick={() => setBreakdownModal({ open: true, material: 'leather' })}
+          className="cursor-pointer"
+        >
+          <StatCard
+            label="Leather Used"
+            value={`${totalLeather.toFixed(1)} sqf`}
+            sublabel="Click for breakdown"
+            icon={<Package size={24} />}
+          />
+        </div>
+        <div
+          onClick={() => setBreakdownModal({ open: true, material: 'buckle' })}
+          className="cursor-pointer"
+        >
+          <StatCard
+            label="Buckles Used"
+            value={`${totalBuckles} pcs`}
+            sublabel="Click for breakdown"
+            icon={<Package size={24} />}
+          />
+        </div>
+        <div
+          onClick={() => setBreakdownModal({ open: true, material: 'footbed' })}
+          className="cursor-pointer"
+        >
+          <StatCard
+            label="Footbeds Used"
+            value={`${totalFootbeds} pcs`}
+            sublabel="Click for breakdown"
+            icon={<Package size={24} />}
+          />
+        </div>
       </div>
 
       {/* Filters */}
@@ -119,6 +159,35 @@ export default function ManagerDashboard() {
                 {p === 'today' ? 'Today' : p === 'week' ? 'This Week' : 'This Month'}
               </button>
             ))}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setPeriod('custom');
+                  setPage(1);
+                }}
+                className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  period === 'custom'
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'text-on-surface-variant hover:text-on-surface bg-surface'
+                }`}
+              >
+                <Calendar size={14} />
+                {period === 'custom' ? customDate : 'Date'}
+              </button>
+              {period === 'custom' && (
+                <input
+                  type="date"
+                  value={customDate}
+                  onChange={(e) => {
+                    setCustomDate(e.target.value);
+                    setPage(1);
+                  }}
+                  max={new Date().toISOString().split('T')[0]}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  style={{ minWidth: '100%' }}
+                />
+              )}
+            </div>
           </div>
 
           <select
@@ -181,6 +250,61 @@ export default function ManagerDashboard() {
           </div>
         )}
       </div>
+
+      {/* Breakdown Modal */}
+      {breakdownModal.open && breakdownModal.material && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/50" onClick={() => setBreakdownModal({ open: false, material: null })} />
+          <div className="relative w-full max-w-md bg-factory-white rounded-2xl shadow-xl z-10 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-on-surface">
+                {breakdownModal.material === 'leather' ? 'LEATHER' : breakdownModal.material === 'buckle' ? 'BUCKLES' : 'FOOTBEDS'} USAGE BREAKDOWN
+              </h2>
+              <button onClick={() => setBreakdownModal({ open: false, material: null })} className="p-2 rounded-lg hover:bg-surface-container transition-colors">
+                <X size={20} className="text-on-surface-variant" />
+              </button>
+            </div>
+            <div className="space-y-2 max-h-80 overflow-y-auto">
+              {breakdownModal.material === 'leather' && (
+                Object.keys(leatherBreakdown).length > 0 ? (
+                  Object.entries(leatherBreakdown).map(([type, qty]) => (
+                    <div key={type} className="flex justify-between items-center py-2 border-b border-outline-variant/30">
+                      <span className="text-sm text-on-surface">{type}</span>
+                      <span className="text-sm font-semibold text-leather-tan">{qty.toFixed(2)} sqf</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-on-surface-variant text-center py-4">No leather usage for this period</p>
+                )
+              )}
+              {breakdownModal.material === 'buckle' && (
+                Object.keys(buckleBreakdown).length > 0 ? (
+                  Object.entries(buckleBreakdown).map(([type, qty]) => (
+                    <div key={type} className="flex justify-between items-center py-2 border-b border-outline-variant/30">
+                      <span className="text-sm text-on-surface">{type}</span>
+                      <span className="text-sm font-semibold text-leather-tan">{qty} pcs</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-on-surface-variant text-center py-4">No buckle usage for this period</p>
+                )
+              )}
+              {breakdownModal.material === 'footbed' && (
+                Object.keys(footbedBreakdown).length > 0 ? (
+                  Object.entries(footbedBreakdown).map(([key, qty]) => (
+                    <div key={key} className="flex justify-between items-center py-2 border-b border-outline-variant/30">
+                      <span className="text-sm text-on-surface">{key}</span>
+                      <span className="text-sm font-semibold text-leather-tan">{qty} pcs</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-on-surface-variant text-center py-4">No footbed usage for this period</p>
+                )
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

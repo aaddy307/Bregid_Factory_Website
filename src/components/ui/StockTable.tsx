@@ -1,6 +1,6 @@
 'use client';
 
-import { Stock } from '@/services/stock';
+import { Stock, MaterialCategory } from '@/services/stock';
 import { formatEURSize } from '@/utils/dateHelpers';
 
 interface StockTableProps {
@@ -8,9 +8,10 @@ interface StockTableProps {
   isLoading?: boolean;
   thresholds?: { leatherSqf: number; buckleQty: number; footbedQty: number };
   material: 'leather' | 'buckle' | 'footbed';
+  categories?: MaterialCategory[];
 }
 
-export default function StockTable({ stock, isLoading, thresholds, material }: StockTableProps) {
+export default function StockTable({ stock, isLoading, thresholds, material, categories = [] }: StockTableProps) {
   if (isLoading) {
     return (
       <div className="card p-8 text-center">
@@ -32,14 +33,17 @@ export default function StockTable({ stock, isLoading, thresholds, material }: S
   }
 
   if (material === 'leather') {
-    const leathersList = stock.leathers || (stock.leatherSqf ? [{ type: stock.leatherType || 'Nubuck', qty: stock.leatherSqf }] : []);
+    const getLeatherQty = (type: string) => {
+      const entry = stock.leathers?.find(l => l.type === type);
+      return entry?.qty ?? 0;
+    };
 
     return (
       <div>
         <h3 className="font-semibold text-on-surface mb-3">Leather Stock Details</h3>
-        {leathersList.length === 0 ? (
+        {categories.length === 0 ? (
           <div className="card p-6 text-center">
-            <p className="text-on-surface-variant">No leather stock entries</p>
+            <p className="text-on-surface-variant">No leather categories defined</p>
           </div>
         ) : (
           <div className="card overflow-hidden">
@@ -52,14 +56,19 @@ export default function StockTable({ stock, isLoading, thresholds, material }: S
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant/30">
-                  {leathersList.map((item, idx) => (
-                    <tr key={idx} className="hover:bg-surface-container-low transition-colors">
-                      <td className="px-6 py-3 text-sm text-on-surface">{item.type}</td>
-                      <td className="px-6 py-3 text-sm font-medium text-right text-on-surface pr-8">
-                        {item.qty.toLocaleString()} sqm
-                      </td>
-                    </tr>
-                  ))}
+                  {categories.map((cat, idx) => {
+                    const qty = getLeatherQty(cat.name);
+                    const isLow = thresholds ? qty <= thresholds.leatherSqf : false;
+                    return (
+                      <tr key={idx} className={`hover:bg-surface-container-low transition-colors ${isLow ? 'bg-error/5' : ''}`}>
+                        <td className="px-6 py-3 text-sm text-on-surface">{cat.name}</td>
+                        <td className={`px-6 py-3 text-sm font-medium text-right pr-8 ${isLow ? 'text-error' : 'text-on-surface'}`}>
+                          {qty.toLocaleString()} sqf
+                          {isLow && <span className="ml-1 text-xs">⚠</span>}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -70,14 +79,20 @@ export default function StockTable({ stock, isLoading, thresholds, material }: S
   }
 
   if (material === 'buckle') {
-    const bucklesList = stock.buckles || (stock.buckleQty ? [{ type: stock.buckleType || 'Brass Buckle', qty: stock.buckleQty }] : []);
+    const getBuckleQty = (cat: MaterialCategory) => {
+      const prefix = cat.color ? `${cat.name} (${cat.color})` : cat.name;
+      const matchingEntries = stock.buckles?.filter(
+        b => b.type === prefix || b.type.startsWith(`${prefix} - `)
+      ) || [];
+      return matchingEntries.reduce((sum, b) => sum + (b.qty ?? 0), 0);
+    };
 
     return (
       <div>
         <h3 className="font-semibold text-on-surface mb-3">Buckle Stock Details</h3>
-        {bucklesList.length === 0 ? (
+        {categories.length === 0 ? (
           <div className="card p-6 text-center">
-            <p className="text-on-surface-variant">No buckle stock entries</p>
+            <p className="text-on-surface-variant">No buckle categories defined</p>
           </div>
         ) : (
           <div className="card overflow-hidden">
@@ -90,14 +105,22 @@ export default function StockTable({ stock, isLoading, thresholds, material }: S
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant/30">
-                  {bucklesList.map((item, idx) => (
-                    <tr key={idx} className="hover:bg-surface-container-low transition-colors">
-                      <td className="px-6 py-3 text-sm text-on-surface">{item.type}</td>
-                      <td className="px-6 py-3 text-sm font-medium text-right text-on-surface pr-8">
-                        {item.qty.toLocaleString()} pcs
-                      </td>
-                    </tr>
-                  ))}
+                  {categories.map((cat, idx) => {
+                    const qty = getBuckleQty(cat);
+                    const isLow = thresholds ? qty <= thresholds.buckleQty : false;
+                    return (
+                      <tr key={idx} className={`hover:bg-surface-container-low transition-colors ${isLow ? 'bg-error/5' : ''}`}>
+                        <td className="px-6 py-3 text-sm text-on-surface">
+                          {cat.name}
+                          {cat.color && <span className="text-on-surface-variant text-xs ml-1">({cat.color})</span>}
+                        </td>
+                        <td className={`px-6 py-3 text-sm font-medium text-right pr-8 ${isLow ? 'text-error' : 'text-on-surface'}`}>
+                          {qty.toLocaleString()} pcs
+                          {isLow && <span className="ml-1 text-xs">⚠</span>}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -108,13 +131,18 @@ export default function StockTable({ stock, isLoading, thresholds, material }: S
   }
 
   // default to 'footbed'
+  const getFootbedQty = (gender: string, size: number, type: string) => {
+    const entry = stock.footbeds?.find(f => f.gender === gender && f.euSize === size && f.type === type);
+    return entry?.qty ?? 0;
+  };
+
   return (
     <div>
       {/* Footbed Stock Table */}
       <h3 className="font-semibold text-on-surface mb-3">Footbed Stock Details</h3>
-      {stock.footbeds.length === 0 ? (
+      {categories.length === 0 ? (
         <div className="card p-6 text-center">
-          <p className="text-on-surface-variant">No footbed stock entries</p>
+          <p className="text-on-surface-variant">No footbed categories defined</p>
         </div>
       ) : (
         <div className="card overflow-hidden">
@@ -129,15 +157,16 @@ export default function StockTable({ stock, isLoading, thresholds, material }: S
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/30">
-                {stock.footbeds.map((fb, idx) => {
-                  const isLow = thresholds ? fb.qty <= thresholds.footbedQty : false;
+                {categories.map((cat, idx) => {
+                  const qty = getFootbedQty(cat.gender || 'Men', cat.size || 40, cat.name);
+                  const isLow = thresholds ? qty <= thresholds.footbedQty : false;
                   return (
                     <tr key={idx} className={`hover:bg-surface-container-low transition-colors ${isLow ? 'bg-error/5' : ''}`}>
-                      <td className="px-4 py-3 text-sm text-on-surface">{fb.gender}</td>
-                      <td className="px-4 py-3 text-sm text-on-surface">{formatEURSize(fb.euSize)}</td>
-                      <td className="px-4 py-3 text-sm text-on-surface-variant">{fb.type}</td>
+                      <td className="px-4 py-3 text-sm text-on-surface">{cat.gender}</td>
+                      <td className="px-4 py-3 text-sm text-on-surface">{formatEURSize(cat.size || 40)}</td>
+                      <td className="px-4 py-3 text-sm text-on-surface-variant">{cat.name}</td>
                       <td className={`px-4 py-3 text-sm font-medium text-right pr-6 ${isLow ? 'text-error' : 'text-on-surface'}`}>
-                        {fb.qty} pcs
+                        {qty} pcs
                         {isLow && <span className="ml-1 text-xs">⚠</span>}
                       </td>
                     </tr>

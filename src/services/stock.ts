@@ -41,6 +41,18 @@ export interface StockLog {
   updatedBy: string;
   updatedByName: string;
   timestamp: string;
+  purchasePrice?: number;
+  totalCost?: number;
+}
+
+export interface MaterialCategory {
+  _id: string;
+  type: 'leather' | 'buckle' | 'footbed';
+  name: string;
+  size?: number;
+  gender?: 'Men' | 'Women';
+  color?: string;
+  createdAt: string;
 }
 
 export async function getStock(): Promise<Stock | null> {
@@ -63,6 +75,7 @@ interface SupplierDetails {
   invoiceNumber: string;
   invoiceDate: string;
   supplierContact?: string;
+  purchasePrice?: number;
 }
 
 export async function addStock(
@@ -169,6 +182,12 @@ export async function addStock(
       stockLogData.invoiceNumber = supplierDetails.invoiceNumber.toUpperCase();
       stockLogData.invoiceDate = supplierDetails.invoiceDate;
       stockLogData.supplierContact = supplierDetails.supplierContact || null;
+      if (supplierDetails.purchasePrice !== undefined) {
+        stockLogData.purchasePrice = supplierDetails.purchasePrice;
+        stockLogData.totalCost = material === 'footbed'
+          ? (quantity / 2) * supplierDetails.purchasePrice
+          : quantity * supplierDetails.purchasePrice;
+      }
     }
 
     await mongoService.insertOne('stock_logs', stockLogData);
@@ -201,6 +220,19 @@ export async function getStockLogs(limit = 50): Promise<StockLog[]> {
     return await mongoService.findMany<StockLog>('stock_logs', {}, {
       sort: { timestamp: -1 as 1 | -1 },
       limit,
+    });
+  } catch {
+    return [];
+  }
+}
+
+export async function getMaterialCategories(
+  type?: 'leather' | 'buckle' | 'footbed'
+): Promise<MaterialCategory[]> {
+  try {
+    const filter = type ? { type } : {};
+    return await mongoService.findMany<MaterialCategory>('material_categories', filter, {
+      sort: { type: 1, name: 1 },
     });
   } catch {
     return [];

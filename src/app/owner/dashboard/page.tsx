@@ -180,7 +180,7 @@ export default function OwnerDashboard() {
         />
         <StatCard
           label="Leather Used"
-          value={`${periodLeather.toFixed(1)} sqm`}
+          value={`${periodLeather.toFixed(1)} sqf`}
           sublabel="Period consumption"
         />
         <StatCard

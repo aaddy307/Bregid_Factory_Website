@@ -22,9 +22,9 @@ export function getTodayDateString(): string {
   return new Date().toISOString().split('T')[0];
 }
 
-export function getDateRange(period: 'today' | 'week' | 'month'): { startDate: string; endDate: string } {
+export function getDateRange(period: 'today' | 'week' | 'month' | 'custom', customDate?: string): { startDate: string; endDate: string } {
   const now = new Date();
-  const endDate = now.toISOString().split('T')[0];
+  let endDate = now.toISOString().split('T')[0];
 
   let startDate: string;
   switch (period) {
@@ -43,6 +43,10 @@ export function getDateRange(period: 'today' | 'week' | 'month'): { startDate: s
       startDate = monthAgo.toISOString().split('T')[0];
       break;
     }
+    case 'custom':
+      startDate = customDate || endDate;
+      endDate = customDate || endDate;
+      break;
   }
 
   return { startDate, endDate };

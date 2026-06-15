@@ -125,7 +125,7 @@ export default function ManagerCatalogPage() {
 
                   <div className="flex flex-wrap gap-3 text-xs text-on-surface-variant">
                     {product.leatherSqfPerPair > 0 && (
-                      <span>Leather: {product.leatherSqfPerPair} sqm/pair</span>
+                      <span>Leather: {product.leatherSqfPerPair} sqf/pair</span>
                     )}
                     {product.bucklePerPair > 0 && (
                       <span>Buckles: {product.bucklePerPair}/pair</span>
