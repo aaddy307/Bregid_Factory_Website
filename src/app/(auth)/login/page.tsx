@@ -26,7 +26,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const { token, user } = await login({ email, password });
+      const { user } = await login({ email, password });
 
       // Check if worker — deny access
       if (user.role === 'worker') {
@@ -45,8 +45,8 @@ export default function LoginPage() {
       // Redirect based on role
       const redirectPath = user.role === 'owner' ? '/owner/dashboard' : '/manager/dashboard';
       router.push(redirectPath);
-    } catch (err: any) {
-      const message = err?.response?.data?.error || err?.message || 'Invalid email or password';
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { error?: string } }; message?: string })?.response?.data?.error || (err as Error)?.message || 'Invalid email or password';
       setError(message);
     } finally {
       setIsLoading(false);

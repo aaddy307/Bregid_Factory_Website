@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Download, Package, X, Calendar } from 'lucide-react';
 import StatCard from '@/components/ui/StatCard';
 import ProductionTable from '@/components/ui/ProductionTable';
-import { getProductionLogs, ProductionLog } from '@/services/production';
+import { getProductionLogs, ProductionLog, ProductionFilter } from '@/services/production';
 import { getStock } from '@/services/stock';
 import { getUsers } from '@/services/users';
 import { getDateRange } from '@/utils/dateHelpers';
@@ -16,12 +16,10 @@ type MaterialType = 'leather' | 'buckle' | 'footbed';
 
 export default function ManagerDashboard() {
   const dateInputRef = useRef<HTMLInputElement>(null);
-  // Auth state managed via restoreSession in layout
   const [period, setPeriod] = useState<Period>('today');
   const [customDate, setCustomDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [logs, setLogs] = useState<ProductionLog[]>([]);
-  const [totalLogs, setTotalLogs] = useState(0);
-  const [stock, setStock] = useState<any>(null);
+  const [stock, setStock] = useState<unknown>(null);
   const [workers, setWorkers] = useState<User[]>([]);
   const [selectedWorker, setSelectedWorker] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
@@ -29,11 +27,13 @@ export default function ManagerDashboard() {
   const PAGE_SIZE = 20;
   const [breakdownModal, setBreakdownModal] = useState<{ open: boolean; material: MaterialType | null }>({ open: false, material: null });
 
-  const fetchData = async () => {
+  void stock; // Used in breakdown modal
+
+  const fetchData = useCallback(async () => {
     setIsLoading(true);
 
     const range = getDateRange(period, period === 'custom' ? customDate : undefined);
-    const filter: any = { startDate: range.startDate, endDate: range.endDate };
+    const filter: ProductionFilter = { startDate: range.startDate, endDate: range.endDate };
     if (selectedWorker !== 'all') {
       filter.workerId = selectedWorker;
     }
@@ -45,15 +45,14 @@ export default function ManagerDashboard() {
     ]);
 
     setLogs(logsRes.logs);
-    setTotalLogs(logsRes.total);
     setStock(stockRes);
     setWorkers(workersRes.filter((w) => w.role === 'worker'));
     setIsLoading(false);
-  };
+  }, [period, customDate, selectedWorker]);
 
   useEffect(() => {
     fetchData();
-  }, [period, customDate, selectedWorker, page]);
+  }, [fetchData, page]);
 
   // Calculate stats
   const totalPairs = logs.reduce((sum, l) => sum + l.quantityPairs, 0);
@@ -168,7 +167,7 @@ export default function ManagerDashboard() {
                   if (picker) {
                     try {
                       picker.showPicker();
-                    } catch (err) {
+                    } catch {
                       picker.click();
                     }
                   }

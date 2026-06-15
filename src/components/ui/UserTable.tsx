@@ -12,7 +12,6 @@ interface UserTableProps {
   onEditTarget?: (user: User) => void;
   onResetPassword?: (user: User) => void;
   onToggleActive?: (user: User) => void;
-  isManagerView?: boolean;
 }
 
 export default function UserTable({
@@ -23,7 +22,6 @@ export default function UserTable({
   onEditTarget,
   onResetPassword,
   onToggleActive,
-  isManagerView = false,
 }: UserTableProps) {
   if (isLoading) {
     return (

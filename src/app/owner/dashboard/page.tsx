@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Calendar, Download } from 'lucide-react';
 import StatCard from '@/components/ui/StatCard';
 import ProductionTable from '@/components/ui/ProductionTable';
 import StockTable from '@/components/ui/StockTable';
-import { getProductionLogs, getWorkerPerformance, getProductBreakdown, ProductionLog } from '@/services/production';
+import { getProductionLogs, getWorkerPerformance, getProductBreakdown, ProductionLog, ProductionFilter } from '@/services/production';
 import { getStock } from '@/services/stock';
 import { getDateRange } from '@/utils/dateHelpers';
 import { exportToExcel, exportToPDF } from '@/utils/export';
@@ -21,20 +21,19 @@ export default function OwnerDashboard() {
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   const [logs, setLogs] = useState<ProductionLog[]>([]);
-  const [totalLogs, setTotalLogs] = useState(0);
   const [workers, setWorkers] = useState<{ workerId: string; workerName: string; totalPairs: number }[]>([]);
   const [productBreakdown, setProductBreakdown] = useState<{ productName: string; sku: string; totalPairs: number }[]>([]);
-  const [stock, setStock] = useState<any>(null);
+  const [stock, setStock] = useState<unknown>(null);
   const [statsToday, setStatsToday] = useState({ totalPairs: 0, totalLeather: 0, logCount: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [selectedStockMaterial, setSelectedStockMaterial] = useState<'leather' | 'buckle' | 'footbed'>('leather');
   const PAGE_SIZE = 20;
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setIsLoading(true);
 
-    let filter: any = {};
+    let filter: ProductionFilter = {};
     if (period === 'custom' && customStart && customEnd) {
       filter = { startDate: customStart, endDate: customEnd };
     } else {
@@ -51,22 +50,20 @@ export default function OwnerDashboard() {
     ]);
 
     setLogs(logsRes.logs);
-    setTotalLogs(logsRes.total);
     setWorkers(workersRes);
     setProductBreakdown(productsRes);
     setStock(stockRes);
 
-    // Calculate today's stats
     const pairs = todayStats.logs.reduce((sum, l) => sum + l.quantityPairs, 0);
     const leather = todayStats.logs.reduce((sum, l) => sum + l.leatherDeductedSqf, 0);
     setStatsToday({ totalPairs: pairs, totalLeather: leather, logCount: todayStats.logs.length });
 
     setIsLoading(false);
-  };
+  }, [period, customStart, customEnd]);
 
   useEffect(() => {
     fetchData();
-  }, [period, customStart, customEnd, page]);
+  }, [fetchData, page]);
 
   const handleExport = (format: 'excel' | 'pdf') => {
     const data = {
@@ -227,7 +224,7 @@ export default function OwnerDashboard() {
             <p className="text-sm text-on-surface-variant">No production data</p>
           ) : (
             <div className="space-y-2">
-              {productBreakdown.map((p, i) => (
+              {productBreakdown.map((p) => (
                 <div key={p.sku} className="flex items-center justify-between py-2 border-b border-outline-variant/20 last:border-0">
                   <div className="min-w-0">
                     <div className="text-sm text-on-surface truncate">{p.productName}</div>
@@ -323,9 +320,9 @@ export default function OwnerDashboard() {
           </div>
         </div>
         <StockTable
-          stock={stock}
+          stock={stock as import('@/services/stock').Stock}
           isLoading={isLoading}
-          thresholds={stock?.thresholds}
+          thresholds={(stock as import('@/services/stock').Stock)?.thresholds}
           material={selectedStockMaterial}
         />
       </div>

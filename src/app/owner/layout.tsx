@@ -12,6 +12,7 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
   const { user, isLoading, setLoading } = useAuthStore();
   const router = useRouter();
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const user = restoreSession();
     if (!user) {
@@ -27,7 +28,7 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
       return;
     }
     setLoading(false);
-  }, []);
+  }, [router, setLoading]);
 
   if (isLoading) {
     return (

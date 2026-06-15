@@ -85,7 +85,6 @@ export default function ManagerUsersPage() {
         onEditTarget={(u) => setTargetUser(u)}
         onResetPassword={(u) => setPasswordUser(u)}
         onToggleActive={handleToggleActive}
-        isManagerView={true}
       />
 
       {/* Modals */}

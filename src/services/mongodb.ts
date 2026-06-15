@@ -27,10 +27,10 @@ class MongoService {
 
   private async request(action: string, collection: string, data: {
     filter?: Record<string, unknown>;
-    document?: any;
+    document?: Record<string, unknown>;
     update?: Record<string, unknown>;
     options?: FindOptions;
-  }): Promise<any> {
+  }): Promise<Record<string, unknown>> {
     try {
       const response = await axios.post(`${API_BASE_URL}/mongodb`, {
         collection,
@@ -44,7 +44,7 @@ class MongoService {
         timeout: 15000,
       });
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     }
   }
@@ -54,7 +54,7 @@ class MongoService {
     filter: Record<string, unknown>
   ): Promise<T | null> {
     const result = await this.request('findOne', collection, { filter });
-    return result.document || null;
+    return (result.document as T) || null;
   }
 
   async findMany<T = MongoDocument>(
@@ -63,7 +63,7 @@ class MongoService {
     options?: FindOptions
   ): Promise<T[]> {
     const result = await this.request('find', collection, { filter, options });
-    return result.documents || [];
+    return (result.documents as T[]) || [];
   }
 
   async insertOne<T = MongoDocument>(
@@ -81,8 +81,8 @@ class MongoService {
   ): Promise<{ matchedCount: number; modifiedCount: number }> {
     const result = await this.request('updateOne', collection, { filter, update });
     return {
-      matchedCount: result.matchedCount || 0,
-      modifiedCount: result.modifiedCount || 0,
+      matchedCount: (result.matchedCount as number) || 0,
+      modifiedCount: (result.modifiedCount as number) || 0,
     };
   }
 
@@ -91,15 +91,15 @@ class MongoService {
     filter: Record<string, unknown>
   ): Promise<{ deletedCount: number }> {
     const result = await this.request('deleteOne', collection, { filter });
-    return { deletedCount: result.deletedCount || 0 };
+    return { deletedCount: (result.deletedCount as number) || 0 };
   }
 
-  async aggregate<T = MongoDocument>(
+async aggregate<T = MongoDocument>(
     collection: string,
-    pipeline: any[]
+    pipeline: Record<string, unknown>[]
   ): Promise<T[]> {
-    const result = await this.request('aggregate', collection, { document: pipeline });
-    return result.documents || [];
+    const result = await this.request('aggregate', collection, { document: pipeline as unknown as Record<string, unknown> });
+    return (result.documents as T[]) || [];
   }
 
   async countDocuments(
@@ -107,7 +107,7 @@ class MongoService {
     filter: Record<string, unknown> = {}
   ): Promise<number> {
     const result = await this.request('countDocuments', collection, { filter });
-    return result.count || 0;
+    return (result.count as number) || 0;
   }
 }
 

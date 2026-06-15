@@ -6,7 +6,6 @@ import {
   LayoutDashboard,
   BarChart3,
   Users,
-  Package,
   Shirt,
   Warehouse,
   LogOut,

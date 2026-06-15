@@ -6,10 +6,9 @@ import { useAuthStore } from '@/store/authStore';
 interface HeaderProps {
   title: string;
   onMenuClick: () => void;
-  notificationCount?: number;
 }
 
-export default function Header({ title, onMenuClick, notificationCount = 0 }: HeaderProps) {
+export default function Header({ title, onMenuClick }: HeaderProps) {
   const { user } = useAuthStore();
   const role = user?.role || 'manager';
 

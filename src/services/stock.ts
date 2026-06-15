@@ -94,7 +94,7 @@ export async function addStock(
     switch (material) {
       case 'leather': {
         const existingLeathers = stock.leathers || [];
-        const leatherIndex = existingLeathers.findIndex((l: any) => l.type === (materialType || 'Nubuck'));
+        const leatherIndex = existingLeathers.findIndex((l) => l.type === (materialType || 'Nubuck'));
         if (leatherIndex >= 0) {
           await mongoService.updateOne('stock', { _id: stock._id }, {
             $inc: {
@@ -114,7 +114,7 @@ export async function addStock(
       }
       case 'buckle': {
         const existingBuckles = stock.buckles || [];
-        const buckleIndex = existingBuckles.findIndex((b: any) => b.type === (materialType || 'Brass Buckle'));
+        const buckleIndex = existingBuckles.findIndex((b) => b.type === (materialType || 'Brass Buckle'));
         if (buckleIndex >= 0) {
           await mongoService.updateOne('stock', { _id: stock._id }, {
             $inc: {

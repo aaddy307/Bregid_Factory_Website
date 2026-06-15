@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Calendar, Download } from 'lucide-react';
 import ProductionTable from '@/components/ui/ProductionTable';
-import { getProductionLogs, ProductionLog } from '@/services/production';
+import { getProductionLogs, ProductionLog, ProductionFilter } from '@/services/production';
 import { getDateRange } from '@/utils/dateHelpers';
 import { exportToExcel, exportToPDF } from '@/utils/export';
 
@@ -15,17 +15,16 @@ export default function OwnerReports() {
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
   const [logs, setLogs] = useState<ProductionLog[]>([]);
-  const [totalLogs, setTotalLogs] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 20;
   const [sortColumn, setSortColumn] = useState('timestamp');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     setIsLoading(true);
 
-    let filter: any = {};
+    let filter: ProductionFilter = {};
     if (period === 'custom' && customStart && customEnd) {
       filter = { startDate: customStart, endDate: customEnd };
     } else {
@@ -35,13 +34,12 @@ export default function OwnerReports() {
 
     const result = await getProductionLogs(filter, 1, 200);
     setLogs(result.logs);
-    setTotalLogs(result.total);
     setIsLoading(false);
-  };
+  }, [period, customStart, customEnd]);
 
   useEffect(() => {
     fetchLogs();
-  }, [period, customStart, customEnd, page]);
+  }, [fetchLogs]);
 
   const handleSort = (column: string) => {
     if (sortColumn === column) {

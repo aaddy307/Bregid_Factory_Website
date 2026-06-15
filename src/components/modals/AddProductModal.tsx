@@ -27,7 +27,7 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
   const [footbedType, setFootbedType] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [stock, setStock] = useState<any>(null);
+  const [stock, setStock] = useState<unknown>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -67,9 +67,10 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
 
   useEffect(() => {
     if (stock && !editProduct) {
-      if (!leatherType && stock.leathers?.[0]) setLeatherType(stock.leathers[0].type);
-      if (!buckleType && stock.buckles?.[0]) setBuckleType(stock.buckles[0].type);
-      const fbTypes = Array.from(new Set(stock.footbeds.map((f: any) => f.type)));
+      const stockData = stock as { leathers?: Array<{type: string}>; buckles?: Array<{type: string}>; footbeds?: Array<{type: string}> };
+      if (!leatherType && stockData.leathers && stockData.leathers.length > 0) setLeatherType(stockData.leathers[0].type);
+      if (!buckleType && stockData.buckles && stockData.buckles.length > 0) setBuckleType(stockData.buckles[0].type);
+      const fbTypes = Array.from(new Set(stockData.footbeds?.map((f) => f.type) || []));
       if (!footbedType && fbTypes[0]) setFootbedType(fbTypes[0] as string);
     }
   }, [stock, editProduct, leatherType, buckleType, footbedType]);
@@ -132,9 +133,10 @@ export default function AddProductModal({ isOpen, onClose, editProduct }: AddPro
 
   const sizeOptions = gender === 'Men' ? MEN_SIZES : WOMEN_SIZES;
 
-  const leatherOptions: string[] = stock?.leathers?.map((l: any) => l.type) || ['Nubuck'];
-  const buckleOptions: string[] = stock?.buckles?.map((b: any) => b.type) || ['Brass Buckle'];
-  const footbedOptions: string[] = stock?.footbeds ? Array.from(new Set(stock.footbeds.map((f: any) => f.type))) as string[] : ['Standard Footbed'];
+  const stockData = stock as { leathers?: Array<{type: string}>; buckles?: Array<{type: string}>; footbeds?: Array<{type: string}> } | null;
+  const leatherOptions: string[] = stockData?.leathers?.map((l) => l.type) || ['Nubuck'];
+  const buckleOptions: string[] = stockData?.buckles?.map((b) => b.type) || ['Brass Buckle'];
+  const footbedOptions: string[] = stockData?.footbeds ? Array.from(new Set(stockData.footbeds.map((f) => f.type))) as string[] : ['Standard Footbed'];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

@@ -22,7 +22,7 @@ export interface ProductionLog {
   logDate: string;
 }
 
-interface ProductionFilter {
+export interface ProductionFilter {
   period?: 'today' | 'week' | 'month';
   startDate?: string;
   endDate?: string;
@@ -37,11 +37,12 @@ export async function getProductionLogs(
   try {
     const dbFilter: Record<string, unknown> = {};
 
+    void page; // Client-side pagination
+
     if (filter.workerId) {
       dbFilter.workerId = filter.workerId;
     }
 
-    // Build date range filter
     if (filter.startDate && filter.endDate) {
       if (filter.startDate === filter.endDate) {
         dbFilter.logDate = filter.startDate;
@@ -52,9 +53,8 @@ export async function getProductionLogs(
       dbFilter.logDate = { $gte: filter.startDate };
     }
 
-    // Fetch more data; client-side paginates since backend may not support skip
     const logs = await mongoService.findMany<ProductionLog>('production_logs', dbFilter, {
-      sort: { timestamp: -1 as 1 | -1 },
+      sort: { timestamp: -1 as const },
       limit: Math.max(limit, 200),
     });
 
