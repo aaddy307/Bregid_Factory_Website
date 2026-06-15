@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Download, Package, X, Calendar } from 'lucide-react';
 import StatCard from '@/components/ui/StatCard';
 import ProductionTable from '@/components/ui/ProductionTable';
@@ -15,6 +15,7 @@ type Period = 'today' | 'week' | 'month' | 'custom';
 type MaterialType = 'leather' | 'buckle' | 'footbed';
 
 export default function ManagerDashboard() {
+  const dateInputRef = useRef<HTMLInputElement>(null);
   // Auth state managed via restoreSession in layout
   const [period, setPeriod] = useState<Period>('today');
   const [customDate, setCustomDate] = useState<string>(new Date().toISOString().split('T')[0]);
@@ -161,9 +162,16 @@ export default function ManagerDashboard() {
             ))}
             <div className="relative">
               <button
+                type="button"
                 onClick={() => {
-                  setPeriod('custom');
-                  setPage(1);
+                  const picker = dateInputRef.current;
+                  if (picker) {
+                    try {
+                      picker.showPicker();
+                    } catch (err) {
+                      picker.click();
+                    }
+                  }
                 }}
                 className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-all ${
                   period === 'custom'
@@ -174,19 +182,20 @@ export default function ManagerDashboard() {
                 <Calendar size={14} />
                 {period === 'custom' ? customDate : 'Date'}
               </button>
-              {period === 'custom' && (
-                <input
-                  type="date"
-                  value={customDate}
-                  onChange={(e) => {
+              <input
+                ref={dateInputRef}
+                type="date"
+                value={period === 'custom' ? customDate : ''}
+                onChange={(e) => {
+                  if (e.target.value) {
                     setCustomDate(e.target.value);
+                    setPeriod('custom');
                     setPage(1);
-                  }}
-                  max={new Date().toISOString().split('T')[0]}
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                  style={{ minWidth: '100%' }}
-                />
-              )}
+                  }
+                }}
+                max={new Date().toISOString().split('T')[0]}
+                className="absolute inset-0 opacity-0 pointer-events-none"
+              />
             </div>
           </div>
 

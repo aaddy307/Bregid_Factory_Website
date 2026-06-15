@@ -13,7 +13,7 @@ interface AddStockModalProps {
 
 type Material = 'leather' | 'buckle' | 'footbed';
 
-const MEN_SIZES = [40, 41, 42, 43, 44];
+const MEN_SIZES = [40, 41, 42, 43, 44, 45];
 const WOMEN_SIZES = [36, 37, 38, 39, 40, 41];
 
 export default function AddStockModal({ isOpen, onClose, userId, userName }: AddStockModalProps) {
