@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -11,8 +10,6 @@ import {
   Shirt,
   Warehouse,
   LogOut,
-  ChevronLeft,
-  ChevronRight,
   Factory,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
@@ -67,7 +64,6 @@ export default function Sidebar({ isMobileOpen, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuthStore();
-  const [collapsed, setCollapsed] = useState(false);
 
   const role = user?.role || 'manager';
 
@@ -86,12 +82,10 @@ export default function Sidebar({ isMobileOpen, onMobileClose }: SidebarProps) {
           <div className="w-10 h-10 rounded-lg bg-leather-tan/20 flex items-center justify-center">
             <Factory size={24} className="text-leather-tan" />
           </div>
-          {!collapsed && (
-            <div>
-              <div className="font-bold text-sm tracking-wider">BREGID FACTORY</div>
-              <div className="text-[10px] text-white/60">Manufacturing System</div>
-            </div>
-          )}
+          <div>
+            <div className="font-bold text-sm tracking-wider">BREGID FACTORY</div>
+            <div className="text-[10px] text-white/60">Manufacturing System</div>
+          </div>
         </Link>
       </div>
 
@@ -101,29 +95,25 @@ export default function Sidebar({ isMobileOpen, onMobileClose }: SidebarProps) {
           <div className="w-8 h-8 rounded-full bg-leather-tan/20 flex items-center justify-center text-xs font-bold text-leather-tan">
             {user?.name?.charAt(0)?.toUpperCase() || '?'}
           </div>
-          {!collapsed && (
-            <div className="min-w-0">
-              <div className="text-sm font-medium truncate">{user?.name || 'User'}</div>
-              <div className="text-[10px] text-white/60 truncate">{user?.email || ''}</div>
-              <div className="mt-1">
-                <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                  role === 'owner'
-                    ? 'bg-leather-tan/20 text-leather-tan'
-                    : 'bg-blue-500/20 text-blue-300'
-                }`}>
-                  {role}
-                </span>
-              </div>
+          <div className="min-w-0">
+            <div className="text-sm font-medium truncate">{user?.name || 'User'}</div>
+            <div className="text-[10px] text-white/60 truncate">{user?.email || ''}</div>
+            <div className="mt-1">
+              <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                role === 'owner'
+                  ? 'bg-leather-tan/20 text-leather-tan'
+                  : 'bg-blue-500/20 text-blue-300'
+              }`}>
+                {role}
+              </span>
             </div>
-          )}
+          </div>
         </div>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-thin">
-        {!collapsed && (
-          <div className="label-caps text-white/40 px-3 pb-2 text-[10px]">NAVIGATION</div>
-        )}
+        <div className="label-caps text-white/40 px-3 pb-2 text-[10px]">NAVIGATION</div>
         {filteredNavItems.map((item) => {
           const isActive = pathname.includes(item.href);
           return (
@@ -138,22 +128,11 @@ export default function Sidebar({ isMobileOpen, onMobileClose }: SidebarProps) {
               }`}
             >
               {item.icon}
-              {!collapsed && <span>{item.label}</span>}
+              <span>{item.label}</span>
             </Link>
           );
         })}
       </nav>
-
-      {/* Collapse Toggle (Desktop) */}
-      <div className="hidden lg:block px-3">
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-all duration-200 text-sm"
-        >
-          {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-          {!collapsed && <span>Collapse</span>}
-        </button>
-      </div>
 
       {/* Logout */}
       <div className="px-3 py-3 border-t border-white/10">
@@ -162,7 +141,7 @@ export default function Sidebar({ isMobileOpen, onMobileClose }: SidebarProps) {
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-all duration-200 text-sm"
         >
           <LogOut size={20} />
-          {!collapsed && <span>Logout</span>}
+          <span>Logout</span>
         </button>
       </div>
     </div>
@@ -172,9 +151,7 @@ export default function Sidebar({ isMobileOpen, onMobileClose }: SidebarProps) {
     <>
       {/* Desktop Sidebar */}
       <aside
-        className={`hidden lg:block fixed top-0 left-0 h-full z-30 transition-all duration-300 ${
-          collapsed ? 'w-16' : 'w-60'
-        }`}
+        className="hidden lg:block fixed top-0 left-0 h-full w-60 z-30 transition-all duration-300"
       >
         {sidebarContent}
       </aside>
