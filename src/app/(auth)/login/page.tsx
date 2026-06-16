@@ -137,9 +137,21 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="text-xs text-center text-on-surface-variant mt-6">
-            Bregid Factory MES v1.0
-          </p>
+          <div className="mt-6 text-center space-y-1">
+            <p className="text-[10px] text-on-surface-variant/70">
+              Bregid Factory MES v1.0
+            </p>
+            <p className="text-xs">
+              <a
+                href="https://ahmed.nexcoreinstitute.org/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-on-surface-variant hover:text-leather-tan transition-colors duration-200 hover:underline"
+              >
+                made by ahmed khan all rights reserve
+              </a>
+            </p>
+          </div>
         </div>
       </div>
     </div>

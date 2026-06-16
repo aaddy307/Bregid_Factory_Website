@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
+import Footer from '@/components/layout/Footer';
 import { useAuthStore } from '@/store/authStore';
 import { restoreSession } from '@/services/auth';
 
@@ -43,11 +44,12 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
   return (
     <div className="min-h-screen bg-background">
       <Sidebar isMobileOpen={isMobileOpen} onMobileClose={() => setIsMobileOpen(false)} />
-      <div className="lg:ml-60 transition-all duration-300">
+      <div className="lg:ml-60 min-h-screen flex flex-col transition-all duration-300">
         <Header title="Manager Panel" onMenuClick={() => setIsMobileOpen(true)} />
-        <main className="p-4 lg:p-6">
+        <main className="flex-1 p-4 lg:p-6">
           {children}
         </main>
+        <Footer />
       </div>
     </div>
   );
