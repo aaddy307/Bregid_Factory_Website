@@ -155,7 +155,8 @@ export default function OwnerDashboard() {
                 type="date"
                 value={customStart}
                 onChange={(e) => { setCustomStart(e.target.value); setPeriod('custom'); }}
-                className="input-field"
+                onClick={(e) => e.currentTarget.showPicker?.()}
+                className="input-field cursor-pointer"
               />
             </div>
             <div className="w-full">
@@ -164,7 +165,8 @@ export default function OwnerDashboard() {
                 type="date"
                 value={customEnd}
                 onChange={(e) => { setCustomEnd(e.target.value); setPeriod('custom'); }}
-                className="input-field"
+                onClick={(e) => e.currentTarget.showPicker?.()}
+                className="input-field cursor-pointer"
               />
             </div>
           </div>

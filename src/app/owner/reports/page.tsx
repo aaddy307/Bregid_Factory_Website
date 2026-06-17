@@ -132,7 +132,8 @@ export default function OwnerReports() {
                 type="date"
                 value={customStart}
                 onChange={(e) => setCustomStart(e.target.value)}
-                className="input-field"
+                onClick={(e) => e.currentTarget.showPicker?.()}
+                className="input-field cursor-pointer"
               />
             </div>
             <div>
@@ -141,7 +142,8 @@ export default function OwnerReports() {
                 type="date"
                 value={customEnd}
                 onChange={(e) => setCustomEnd(e.target.value)}
-                className="input-field"
+                onClick={(e) => e.currentTarget.showPicker?.()}
+                className="input-field cursor-pointer"
               />
             </div>
             <button onClick={() => { setPeriod('custom'); fetchLogs(); }} className="btn-primary text-sm">
