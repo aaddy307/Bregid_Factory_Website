@@ -34,8 +34,11 @@ export default function OwnerDashboard() {
     setIsLoading(true);
 
     let filter: ProductionFilter = {};
-    if (period === 'custom' && customStart && customEnd) {
-      filter = { startDate: customStart, endDate: customEnd };
+    if (period === 'custom') {
+      filter = { 
+        startDate: customStart || undefined, 
+        endDate: customEnd || undefined 
+      };
     } else {
       const range = getDateRange(period as DateRangePeriod);
       filter = { startDate: range.startDate, endDate: range.endDate };
@@ -145,8 +148,8 @@ export default function OwnerDashboard() {
       {/* Custom Date Range */}
       {showDatePicker && (
         <div className="card p-4">
-          <div className="flex items-center gap-4">
-            <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="w-full">
               <label className="label-caps text-on-surface-variant block mb-1">From</label>
               <input
                 type="date"
@@ -155,7 +158,7 @@ export default function OwnerDashboard() {
                 className="input-field"
               />
             </div>
-            <div>
+            <div className="w-full">
               <label className="label-caps text-on-surface-variant block mb-1">To</label>
               <input
                 type="date"

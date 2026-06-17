@@ -25,8 +25,11 @@ export default function OwnerReports() {
     setIsLoading(true);
 
     let filter: ProductionFilter = {};
-    if (period === 'custom' && customStart && customEnd) {
-      filter = { startDate: customStart, endDate: customEnd };
+    if (period === 'custom') {
+      filter = { 
+        startDate: customStart || undefined, 
+        endDate: customEnd || undefined 
+      };
     } else {
       const range = getDateRange(period as DateRangePeriod);
       filter = { startDate: range.startDate, endDate: range.endDate };
