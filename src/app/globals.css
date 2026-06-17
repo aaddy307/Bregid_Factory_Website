@@ -75,3 +75,9 @@ body {
     @apply text-xs font-bold uppercase tracking-wider;
   }
 }
+
+/* Hide native browser calendar icon in date inputs */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  cursor: pointer;
+}
