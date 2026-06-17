@@ -92,12 +92,12 @@ export default function OwnerDashboard() {
     <div className="space-y-6">
       {/* Period Tabs */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-1 p-1 bg-surface-container rounded-lg w-full md:w-auto">
+        <div className="grid grid-cols-2 sm:flex sm:items-center gap-1 p-1 bg-surface-container rounded-lg w-full md:w-auto">
           {(['today', 'week', 'month'] as Period[]).map((p) => (
             <button
               key={p}
               onClick={() => { setPeriod(p); setShowDatePicker(false); }}
-              className={`flex-1 md:flex-initial text-center px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-all ${
+              className={`text-center px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-all ${
                 period === p
                   ? 'bg-primary text-white shadow-sm'
                   : 'text-on-surface-variant hover:text-on-surface'
@@ -108,14 +108,14 @@ export default function OwnerDashboard() {
           ))}
           <button
             onClick={() => setShowDatePicker(!showDatePicker)}
-            className={`flex-1 md:flex-initial text-center px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+            className={`w-full sm:w-auto text-center px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 ${
               period === 'custom'
                 ? 'bg-primary text-white shadow-sm'
                 : 'text-on-surface-variant hover:text-on-surface'
             }`}
           >
-            <Calendar size={14} />
-            Custom
+            <Calendar size={14} className="shrink-0" />
+            <span className="truncate">Custom</span>
           </button>
         </div>
 

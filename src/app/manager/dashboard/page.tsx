@@ -145,12 +145,12 @@ export default function ManagerDashboard() {
       {/* Filters */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full md:w-auto">
-          <div className="flex items-center gap-1 p-1 bg-surface-container rounded-lg w-full sm:w-auto">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-1 p-1 bg-surface-container rounded-lg w-full sm:w-auto">
             {(['today', 'week', 'month'] as Period[]).map((p) => (
               <button
                 key={p}
                 onClick={() => { setPeriod(p); setPage(1); }}
-                className={`flex-1 sm:flex-initial text-center px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                className={`text-center px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-all ${
                   period === p
                     ? 'bg-primary text-white shadow-sm'
                     : 'text-on-surface-variant hover:text-on-surface'
@@ -159,7 +159,7 @@ export default function ManagerDashboard() {
                 {p === 'today' ? 'Today' : p === 'week' ? 'This Week' : 'This Month'}
               </button>
             ))}
-            <div className="relative">
+            <div className="relative w-full sm:w-auto">
               <button
                 type="button"
                 onClick={() => {
@@ -172,14 +172,14 @@ export default function ManagerDashboard() {
                     }
                   }
                 }}
-                className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                className={`w-full flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-all ${
                   period === 'custom'
                     ? 'bg-primary text-white shadow-sm'
                     : 'text-on-surface-variant hover:text-on-surface bg-surface'
                 }`}
               >
-                <Calendar size={14} />
-                {period === 'custom' ? customDate : 'Date'}
+                <Calendar size={14} className="shrink-0" />
+                <span className="truncate">{period === 'custom' ? customDate : 'Date'}</span>
               </button>
               <input
                 ref={dateInputRef}
