@@ -264,11 +264,15 @@ export default function ManagerDashboard() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/50" onClick={() => setBreakdownModal({ open: false, material: null })} />
           <div className="relative w-full max-w-md bg-factory-white rounded-2xl shadow-xl z-10 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-on-surface">
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <h2 className="text-base sm:text-lg font-semibold text-on-surface leading-tight min-w-0">
                 {breakdownModal.material === 'leather' ? 'LEATHER' : breakdownModal.material === 'buckle' ? 'BUCKLES' : 'FOOTBEDS'} USAGE BREAKDOWN
               </h2>
-              <button onClick={() => setBreakdownModal({ open: false, material: null })} className="p-2 rounded-lg hover:bg-surface-container transition-colors">
+              <button 
+                onClick={() => setBreakdownModal({ open: false, material: null })} 
+                className="p-1.5 -mr-1.5 rounded-lg hover:bg-surface-container transition-colors shrink-0"
+                aria-label="Close modal"
+              >
                 <X size={20} className="text-on-surface-variant" />
               </button>
             </div>

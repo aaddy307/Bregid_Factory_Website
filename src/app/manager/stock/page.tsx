@@ -276,9 +276,13 @@ export default function ManagerStockPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/50" onClick={() => setShowDetailsModal(false)} />
           <div className="relative w-full max-w-md bg-factory-white rounded-2xl shadow-xl z-10 p-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-on-surface">STOCK ENTRY DETAILS</h2>
-              <button onClick={() => setShowDetailsModal(false)} className="p-2 rounded-lg hover:bg-surface-container transition-colors">
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <h2 className="text-base sm:text-lg font-semibold text-on-surface leading-tight min-w-0">STOCK ENTRY DETAILS</h2>
+              <button 
+                onClick={() => setShowDetailsModal(false)} 
+                className="p-1.5 -mr-1.5 rounded-lg hover:bg-surface-container transition-colors shrink-0"
+                aria-label="Close modal"
+              >
                 <X size={20} className="text-on-surface-variant" />
               </button>
             </div>
