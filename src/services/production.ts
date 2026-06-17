@@ -1,4 +1,5 @@
 import { mongoService } from './mongodb';
+import { getDateRange } from '@/utils/dateHelpers';
 
 export interface ProductionLog {
   _id: string;
@@ -43,14 +44,23 @@ export async function getProductionLogs(
       dbFilter.workerId = filter.workerId;
     }
 
-    if (filter.startDate && filter.endDate) {
-      if (filter.startDate === filter.endDate) {
-        dbFilter.logDate = filter.startDate;
+    let startDate = filter.startDate;
+    let endDate = filter.endDate;
+
+    if (!startDate && !endDate && filter.period) {
+      const range = getDateRange(filter.period);
+      startDate = range.startDate;
+      endDate = range.endDate;
+    }
+
+    if (startDate && endDate) {
+      if (startDate === endDate) {
+        dbFilter.logDate = startDate;
       } else {
-        dbFilter.logDate = { $gte: filter.startDate, $lte: filter.endDate };
+        dbFilter.logDate = { $gte: startDate, $lte: endDate };
       }
-    } else if (filter.startDate) {
-      dbFilter.logDate = { $gte: filter.startDate };
+    } else if (startDate) {
+      dbFilter.logDate = { $gte: startDate };
     }
 
     const logs = await mongoService.findMany<ProductionLog>('production_logs', dbFilter, {
@@ -67,10 +77,22 @@ export async function getProductionLogs(
 }
 
 export async function getWorkerPerformance(
-  date: string
+  startDate: string,
+  endDate?: string
 ): Promise<{ workerId: string; workerName: string; totalPairs: number }[]> {
   try {
-    const logs = await mongoService.findMany<ProductionLog>('production_logs', { logDate: date });
+    const dbFilter: Record<string, unknown> = {};
+    if (startDate && endDate) {
+      if (startDate === endDate) {
+        dbFilter.logDate = startDate;
+      } else {
+        dbFilter.logDate = { $gte: startDate, $lte: endDate };
+      }
+    } else if (startDate) {
+      dbFilter.logDate = startDate;
+    }
+
+    const logs = await mongoService.findMany<ProductionLog>('production_logs', dbFilter);
     const workerMap = new Map<string, { workerId: string; workerName: string; totalPairs: number }>();
 
     logs.forEach((log) => {
@@ -90,10 +112,22 @@ export async function getWorkerPerformance(
 }
 
 export async function getProductBreakdown(
-  date: string
+  startDate: string,
+  endDate?: string
 ): Promise<{ productName: string; sku: string; totalPairs: number }[]> {
   try {
-    const logs = await mongoService.findMany<ProductionLog>('production_logs', { logDate: date });
+    const dbFilter: Record<string, unknown> = {};
+    if (startDate && endDate) {
+      if (startDate === endDate) {
+        dbFilter.logDate = startDate;
+      } else {
+        dbFilter.logDate = { $gte: startDate, $lte: endDate };
+      }
+    } else if (startDate) {
+      dbFilter.logDate = startDate;
+    }
+
+    const logs = await mongoService.findMany<ProductionLog>('production_logs', dbFilter);
     const productMap = new Map<string, { productName: string; sku: string; totalPairs: number }>();
 
     logs.forEach((log) => {

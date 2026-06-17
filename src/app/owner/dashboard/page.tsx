@@ -6,7 +6,7 @@ import StatCard from '@/components/ui/StatCard';
 import ProductionTable from '@/components/ui/ProductionTable';
 import StockTable from '@/components/ui/StockTable';
 import { getProductionLogs, getWorkerPerformance, getProductBreakdown, ProductionLog, ProductionFilter } from '@/services/production';
-import { getStock } from '@/services/stock';
+import { getStock, getMaterialCategories, MaterialCategory } from '@/services/stock';
 import { getDateRange } from '@/utils/dateHelpers';
 import { exportToExcel, exportToPDF } from '@/utils/export';
 
@@ -24,7 +24,7 @@ export default function OwnerDashboard() {
   const [workers, setWorkers] = useState<{ workerId: string; workerName: string; totalPairs: number }[]>([]);
   const [productBreakdown, setProductBreakdown] = useState<{ productName: string; sku: string; totalPairs: number }[]>([]);
   const [stock, setStock] = useState<unknown>(null);
-  const [statsToday, setStatsToday] = useState({ totalPairs: 0, totalLeather: 0, logCount: 0 });
+  const [materialCategories, setMaterialCategories] = useState<MaterialCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [selectedStockMaterial, setSelectedStockMaterial] = useState<'leather' | 'buckle' | 'footbed'>('leather');
@@ -41,22 +41,19 @@ export default function OwnerDashboard() {
       filter = { startDate: range.startDate, endDate: range.endDate };
     }
 
-    const [logsRes, workersRes, productsRes, stockRes, todayStats] = await Promise.all([
+    const [logsRes, workersRes, productsRes, stockRes, categoriesRes] = await Promise.all([
       getProductionLogs(filter, 1, 200),
-      getWorkerPerformance(filter.startDate || ''),
-      getProductBreakdown(filter.startDate || ''),
+      getWorkerPerformance(filter.startDate || '', filter.endDate),
+      getProductBreakdown(filter.startDate || '', filter.endDate),
       getStock(),
-      getProductionLogs({ period: 'today' }, 1, 10000),
+      getMaterialCategories(),
     ]);
 
     setLogs(logsRes.logs);
     setWorkers(workersRes);
     setProductBreakdown(productsRes);
     setStock(stockRes);
-
-    const pairs = todayStats.logs.reduce((sum, l) => sum + l.quantityPairs, 0);
-    const leather = todayStats.logs.reduce((sum, l) => sum + l.leatherDeductedSqf, 0);
-    setStatsToday({ totalPairs: pairs, totalLeather: leather, logCount: todayStats.logs.length });
+    setMaterialCategories(categoriesRes);
 
     setIsLoading(false);
   }, [period, customStart, customEnd]);
@@ -87,6 +84,14 @@ export default function OwnerDashboard() {
   // Calculate period stats
   const periodPairs = logs.reduce((sum, l) => sum + l.quantityPairs, 0);
   const periodLeather = logs.reduce((sum, l) => sum + l.leatherDeductedSqf, 0);
+  const periodBuckle = logs.reduce((sum, l) => sum + (l.buckleDeducted || 0), 0);
+  const periodFootbed = logs.reduce((sum, l) => sum + (l.footbedDeducted || 0), 0);
+
+  const periodLabel =
+    period === 'today' ? 'Today' :
+    period === 'week' ? 'This Week' :
+    period === 'month' ? 'This Month' :
+    'Custom';
 
   return (
     <div className="space-y-6">
@@ -166,24 +171,24 @@ export default function OwnerDashboard() {
       {/* Stats Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          label="Today"
-          value={`${statsToday.totalPairs} pairs`}
-          sublabel="Total pairs produced"
-        />
-        <StatCard
-          label="Period"
+          label="Pairs Produced"
           value={`${periodPairs} pairs`}
-          sublabel={`${period.toUpperCase()} total`}
+          sublabel={`${periodLabel} production`}
         />
         <StatCard
           label="Leather Used"
           value={`${periodLeather.toFixed(1)} sqf`}
-          sublabel="Period consumption"
+          sublabel={`${periodLabel} consumption`}
         />
         <StatCard
-          label="Workers Active"
-          value={workers.length}
-          sublabel="Logged production"
+          label="Buckles Used"
+          value={`${periodBuckle} pcs`}
+          sublabel={`${periodLabel} consumption`}
+        />
+        <StatCard
+          label="Footbeds Used"
+          value={`${periodFootbed} pcs`}
+          sublabel={`${periodLabel} consumption`}
         />
       </div>
 
@@ -324,6 +329,7 @@ export default function OwnerDashboard() {
           isLoading={isLoading}
           thresholds={(stock as import('@/services/stock').Stock)?.thresholds}
           material={selectedStockMaterial}
+          categories={materialCategories.filter((c) => c.type === selectedStockMaterial)}
         />
       </div>
     </div>
