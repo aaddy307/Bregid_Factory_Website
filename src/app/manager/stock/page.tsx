@@ -7,6 +7,7 @@ import StockTable from '@/components/ui/StockTable';
 import AddStockModal from '@/components/modals/AddStockModal';
 import { getStock, getStockLogs, Stock as StockType, StockLog, getMaterialCategories, MaterialCategory } from '@/services/stock';
 import { useAuthStore } from '@/store/authStore';
+import { formatDate, formatDateTime } from '@/utils/dateHelpers';
 
 export default function ManagerStockPage() {
   const { user } = useAuthStore();
@@ -231,8 +232,11 @@ export default function ManagerStockPage() {
                           onClick={() => { setSelectedLog(log); setShowDetailsModal(true); }}
                           className="hover:bg-surface-container-low transition-colors cursor-pointer"
                         >
-                          <td className="px-4 py-3 text-sm text-on-surface-variant">
-                            {new Date(log.timestamp).toLocaleDateString()}
+                          <td className="px-4 py-3">
+                            <div className="text-sm text-on-surface font-medium">{formatDate(log.timestamp)}</div>
+                            <div className="text-[10px] text-on-surface-variant/70">
+                              {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
                           </td>
                           <td className="px-4 py-3">
                             <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
@@ -301,7 +305,7 @@ export default function ManagerStockPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-on-surface-variant">Invoice Date</span>
-                    <span className="text-sm font-medium text-on-surface">{selectedLog.invoiceDate ? new Date(selectedLog.invoiceDate).toLocaleDateString() : '—'}</span>
+                    <span className="text-sm font-medium text-on-surface">{selectedLog.invoiceDate ? formatDate(selectedLog.invoiceDate) : '—'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-on-surface-variant">Contact</span>
@@ -363,7 +367,7 @@ export default function ManagerStockPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-on-surface-variant">Date</span>
-                <span className="text-sm font-medium text-on-surface">{new Date(selectedLog.timestamp).toLocaleString()}</span>
+                <span className="text-sm font-medium text-on-surface">{formatDateTime(selectedLog.timestamp)}</span>
               </div>
             </div>
           </div>
