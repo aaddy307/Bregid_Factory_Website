@@ -87,21 +87,25 @@ export default function AddStockModal({ isOpen, onClose, userId, userName }: Add
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-factory-white rounded-2xl shadow-xl z-10">
+      <div className="relative w-full max-w-lg bg-factory-white rounded-2xl shadow-xl z-10 max-h-[90vh] overflow-y-auto scrollbar-thin">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant/30">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-leather-tan/10 flex items-center justify-center">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-outline-variant/30 sticky top-0 bg-factory-white z-10">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-lg bg-leather-tan/10 flex items-center justify-center shrink-0">
               <Package size={20} className="text-leather-tan" />
             </div>
-            <h2 className="text-lg font-semibold text-on-surface">Add Stock Entry</h2>
+            <h2 className="text-lg font-semibold text-on-surface truncate">Add Stock Entry</h2>
           </div>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-surface-container transition-colors">
+          <button 
+            onClick={onClose} 
+            className="p-2 rounded-lg hover:bg-surface-container transition-colors shrink-0"
+            aria-label="Close modal"
+          >
             <X size={20} className="text-on-surface-variant" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-5">
           {/* Material Selector */}
           <div>
             <label className="label-caps text-on-surface-variant block mb-2">Material</label>
@@ -242,7 +246,7 @@ export default function AddStockModal({ isOpen, onClose, userId, userName }: Add
               className="input-field"
               required
             />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <input
                 type="text"
                 value={invoiceNumber}
