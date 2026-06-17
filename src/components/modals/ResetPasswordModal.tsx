@@ -47,9 +47,9 @@ export default function ResetPasswordModal({ isOpen, onClose, user }: ResetPassw
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50">
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-factory-white rounded-2xl shadow-xl z-10">
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-32px)] max-w-md bg-factory-white rounded-2xl shadow-xl z-10 max-h-[90vh] overflow-y-auto scrollbar-thin">
         <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant/30">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-leather-tan/10 flex items-center justify-center">

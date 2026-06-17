@@ -261,9 +261,9 @@ export default function ManagerDashboard() {
 
       {/* Breakdown Modal */}
       {breakdownModal.open && breakdownModal.material && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50">
           <div className="fixed inset-0 bg-black/50" onClick={() => setBreakdownModal({ open: false, material: null })} />
-          <div className="relative w-full max-w-md bg-factory-white rounded-2xl shadow-xl z-10 p-6">
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-32px)] max-w-md bg-factory-white rounded-2xl shadow-xl z-10 p-6 max-h-[90vh] overflow-y-auto scrollbar-thin">
             <div className="flex items-start justify-between gap-4 mb-4">
               <h2 className="text-base sm:text-lg font-semibold text-on-surface leading-tight min-w-0">
                 {breakdownModal.material === 'leather' ? 'LEATHER' : breakdownModal.material === 'buckle' ? 'BUCKLES' : 'FOOTBEDS'} USAGE BREAKDOWN
