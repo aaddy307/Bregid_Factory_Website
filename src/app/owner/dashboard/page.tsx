@@ -115,7 +115,11 @@ export default function OwnerDashboard() {
             </button>
           ))}
           <button
-            onClick={() => setShowDatePicker(!showDatePicker)}
+            onClick={() => {
+              const nextShow = !showDatePicker;
+              setShowDatePicker(nextShow);
+              setPeriod(nextShow ? 'custom' : 'today');
+            }}
             className={`w-full sm:w-auto text-center px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 ${
               period === 'custom'
                 ? 'bg-primary text-white shadow-sm'
