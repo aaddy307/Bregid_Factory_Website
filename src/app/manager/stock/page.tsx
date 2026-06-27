@@ -24,11 +24,18 @@ export default function ManagerStockPage() {
   const [materialCategories, setMaterialCategories] = useState<MaterialCategory[]>([]);
   const [historyDateFilter, setHistoryDateFilter] = useState<string | null>(null);
 
+  const [historyPage, setHistoryPage] = useState(1);
+  const PAGE_SIZE = 20;
+
+  useEffect(() => {
+    setHistoryPage(1);
+  }, [historyMaterial, searchSupplier, historyDateFilter]);
+
   const fetchStock = async () => {
     setIsLoading(true);
     const [stockData, logsData, categoriesData] = await Promise.all([
       getStock(),
-      getStockLogs(50),
+      getStockLogs(200),
       getMaterialCategories(),
     ]);
     setStock(stockData);
@@ -47,6 +54,9 @@ export default function ManagerStockPage() {
     const matchesDate = !historyDateFilter || l.timestamp.split('T')[0] === historyDateFilter;
     return matchesMaterial && matchesSupplier && matchesDate;
   });
+
+  const paginatedHistory = filteredLogs.slice((historyPage - 1) * PAGE_SIZE, historyPage * PAGE_SIZE);
+  const totalHistoryPages = Math.ceil(filteredLogs.length / PAGE_SIZE);
 
   const isLeatherLow = stock?.thresholds ? (stock.leatherSqf ?? 0) <= stock.thresholds.leatherSqf : false;
   const isBuckleLow = stock?.thresholds ? (stock.buckleQty ?? 0) <= stock.thresholds.buckleQty : false;
@@ -226,7 +236,7 @@ export default function ManagerStockPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-outline-variant/30">
-                      {filteredLogs.map((log) => (
+                      {paginatedHistory.map((log) => (
                         <tr
                           key={log._id}
                           onClick={() => { setSelectedLog(log); setShowDetailsModal(true); }}
@@ -261,6 +271,32 @@ export default function ManagerStockPage() {
                     </tbody>
                   </table>
                 </div>
+
+                {/* Pagination Controls */}
+                {totalHistoryPages > 1 && (
+                  <div className="flex items-center justify-between p-4 border-t border-outline-variant/30 bg-surface-container/10">
+                    <p className="text-sm text-on-surface-variant">
+                      Page {historyPage} of {totalHistoryPages} ({filteredLogs.length} logs)
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setHistoryPage((p) => Math.max(1, p - 1))}
+                        disabled={historyPage === 1}
+                        className="btn-secondary text-sm px-3 py-1.5"
+                      >
+                        Previous
+                      </button>
+                      <span className="text-sm text-on-surface-variant font-medium">{historyPage}</span>
+                      <button
+                        onClick={() => setHistoryPage((p) => Math.min(totalHistoryPages, p + 1))}
+                        disabled={historyPage === totalHistoryPages}
+                        className="btn-secondary text-sm px-3 py-1.5"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

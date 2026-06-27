@@ -7,8 +7,11 @@ import ProductionTable from '@/components/ui/ProductionTable';
 import StockTable from '@/components/ui/StockTable';
 import { getProductionLogs, getWorkerPerformance, getProductBreakdown, ProductionLog, ProductionFilter } from '@/services/production';
 import { getStock, getMaterialCategories, MaterialCategory } from '@/services/stock';
+import { getUsers } from '@/services/users';
+import { getProducts, Product } from '@/services/products';
 import { getDateRange } from '@/utils/dateHelpers';
 import { exportToExcel, exportToPDF } from '@/utils/export';
+import { User } from '@/store/authStore';
 
 type Period = 'today' | 'week' | 'month' | 'custom';
 type DateRangePeriod = 'today' | 'week' | 'month';
@@ -21,7 +24,7 @@ export default function OwnerDashboard() {
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   const [logs, setLogs] = useState<ProductionLog[]>([]);
-  const [workers, setWorkers] = useState<{ workerId: string; workerName: string; totalPairs: number }[]>([]);
+  const [workersPerformance, setWorkersPerformance] = useState<{ workerId: string; workerName: string; totalPairs: number }[]>([]);
   const [productBreakdown, setProductBreakdown] = useState<{ productName: string; sku: string; totalPairs: number }[]>([]);
   const [stock, setStock] = useState<unknown>(null);
   const [materialCategories, setMaterialCategories] = useState<MaterialCategory[]>([]);
@@ -29,6 +32,14 @@ export default function OwnerDashboard() {
   const [page, setPage] = useState(1);
   const [selectedStockMaterial, setSelectedStockMaterial] = useState<'leather' | 'buckle' | 'footbed'>('leather');
   const PAGE_SIZE = 20;
+
+  // Filters
+  const [selectedWorker, setSelectedWorker] = useState('all');
+  const [selectedProduct, setSelectedProduct] = useState('all');
+  const [selectedGender, setSelectedGender] = useState('all');
+  const [selectedSize, setSelectedSize] = useState('all');
+  const [workersList, setWorkersList] = useState<User[]>([]);
+  const [productsList, setProductsList] = useState<Product[]>([]);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -44,31 +55,70 @@ export default function OwnerDashboard() {
       filter = { startDate: range.startDate, endDate: range.endDate };
     }
 
-    const [logsRes, workersRes, productsRes, stockRes, categoriesRes] = await Promise.all([
+    const [logsRes, workersRes, productsRes, stockRes, categoriesRes, usersListRes, activeProductsRes] = await Promise.all([
       getProductionLogs(filter, 1, 200),
       getWorkerPerformance(filter.startDate || '', filter.endDate),
       getProductBreakdown(filter.startDate || '', filter.endDate),
       getStock(),
       getMaterialCategories(),
+      getUsers(),
+      getProducts(),
     ]);
 
     setLogs(logsRes.logs);
-    setWorkers(workersRes);
+    setWorkersPerformance(workersRes);
     setProductBreakdown(productsRes);
     setStock(stockRes);
     setMaterialCategories(categoriesRes);
+    setWorkersList(usersListRes.filter((u) => u.role === 'worker'));
+    setProductsList(activeProductsRes);
 
     setIsLoading(false);
   }, [period, customStart, customEnd]);
 
   useEffect(() => {
     fetchData();
-  }, [fetchData, page]);
+  }, [fetchData]);
+
+  // Extract unique EU sizes from products (filtered by selected gender), fallback to logs
+  const availableSizes = (() => {
+    const extracted = Array.from(
+      new Set(
+        productsList
+          .filter((p) => selectedGender === 'all' || p.gender === selectedGender)
+          .flatMap((p) => p.sizes || [])
+      )
+    ).sort((a, b) => a - b);
+    if (extracted.length > 0) return extracted;
+    return Array.from(
+      new Set(
+        logs
+          .filter((l) => selectedGender === 'all' || l.gender === selectedGender)
+          .map((l) => l.euSize)
+      )
+    ).sort((a, b) => a - b);
+  })();
+
+  // Reset size filter if the currently selected size is not available for the selected gender
+  useEffect(() => {
+    if (selectedSize !== 'all' && !availableSizes.includes(Number(selectedSize))) {
+      setSelectedSize('all');
+    }
+  }, [selectedGender, availableSizes, selectedSize]);
+
+  // Client-side filtering of logs
+  const filteredLogs = logs.filter((log) => {
+    const matchesWorker = selectedWorker === 'all' || log.workerId === selectedWorker;
+    const matchesProduct = selectedProduct === 'all' || log.productId === selectedProduct;
+    const matchesGender = selectedGender === 'all' || log.gender === selectedGender;
+    const matchesSize = selectedSize === 'all' || log.euSize.toString() === selectedSize;
+    return matchesWorker && matchesProduct && matchesGender && matchesSize;
+  });
 
   const handleExport = (format: 'excel' | 'pdf') => {
     const data = {
       headers: ['Worker', 'Product', 'SKU', 'Gender', 'Size', 'Qty', 'Date'],
-      rows: logs.map((l) => [l.workerName, l.productName, l.sku, l.gender, `EU ${l.euSize}`, l.quantityPairs, l.logDate]),
+      rows: filteredLogs.map((l) => [l.workerName, l.productName, l.sku, l.gender, `EU ${l.euSize}`, l.quantityPairs, l.logDate]),
       filename: `production-report-${period}`,
       title: `Production Report - ${period.toUpperCase()}`,
     };
@@ -80,15 +130,17 @@ export default function OwnerDashboard() {
     }
   };
 
-  // Client-side pagination
-  const paginatedLogs = logs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const totalPages = Math.ceil(logs.length / PAGE_SIZE);
 
-  // Calculate period stats
-  const periodPairs = logs.reduce((sum, l) => sum + l.quantityPairs, 0);
-  const periodLeather = logs.reduce((sum, l) => sum + l.leatherDeductedSqf, 0);
-  const periodBuckle = logs.reduce((sum, l) => sum + (l.buckleDeducted || 0), 0);
-  const periodFootbed = logs.reduce((sum, l) => sum + (l.footbedDeducted || 0), 0);
+
+  // Client-side pagination based on filtered logs
+  const paginatedLogs = filteredLogs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.ceil(filteredLogs.length / PAGE_SIZE);
+
+  // Calculate period stats based on filtered logs
+  const periodPairs = filteredLogs.reduce((sum, l) => sum + l.quantityPairs, 0);
+  const periodLeather = filteredLogs.reduce((sum, l) => sum + l.leatherDeductedSqf, 0);
+  const periodBuckle = filteredLogs.reduce((sum, l) => sum + (l.buckleDeducted || 0), 0);
+  const periodFootbed = filteredLogs.reduce((sum, l) => sum + (l.footbedDeducted || 0), 0);
 
   const periodLabel =
     period === 'today' ? 'Today' :
@@ -177,6 +229,52 @@ export default function OwnerDashboard() {
         </div>
       )}
 
+      {/* Interactive Filters row for Owner */}
+      <div className="flex flex-wrap items-center gap-2">
+        <select
+          value={selectedWorker}
+          onChange={(e) => { setSelectedWorker(e.target.value); setPage(1); }}
+          className="input-field w-full sm:w-auto min-w-[140px]"
+        >
+          <option value="all">All Workers</option>
+          {workersList.map((w) => (
+            <option key={w._id} value={w._id}>{w.name}</option>
+          ))}
+        </select>
+
+        <select
+          value={selectedProduct}
+          onChange={(e) => { setSelectedProduct(e.target.value); setPage(1); }}
+          className="input-field w-full sm:w-auto min-w-[140px]"
+        >
+          <option value="all">All Products</option>
+          {productsList.map((p) => (
+            <option key={p._id} value={p._id}>{p.name}</option>
+          ))}
+        </select>
+
+        <select
+          value={selectedGender}
+          onChange={(e) => { setSelectedGender(e.target.value); setPage(1); }}
+          className="input-field w-full sm:w-auto min-w-[120px]"
+        >
+          <option value="all">All Genders</option>
+          <option value="Men">Men</option>
+          <option value="Women">Women</option>
+        </select>
+
+        <select
+          value={selectedSize}
+          onChange={(e) => { setSelectedSize(e.target.value); setPage(1); }}
+          className="input-field w-full sm:w-auto min-w-[100px]"
+        >
+          <option value="all">All Sizes</option>
+          {availableSizes.map((s) => (
+            <option key={s} value={s.toString()}>EU {s}</option>
+          ))}
+        </select>
+      </div>
+
       {/* Stats Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
@@ -205,11 +303,11 @@ export default function OwnerDashboard() {
         {/* Worker Performance */}
         <div className="card p-4 lg:p-5">
           <h2 className="font-semibold text-on-surface mb-4">Worker Performance</h2>
-          {workers.length === 0 ? (
+          {workersPerformance.length === 0 ? (
             <p className="text-sm text-on-surface-variant">No production data</p>
           ) : (
             <div className="space-y-2">
-              {workers
+              {workersPerformance
                 .sort((a, b) => b.totalPairs - a.totalPairs)
                 .map((w, i) => (
                   <div key={w.workerId} className="flex items-center justify-between py-2 border-b border-outline-variant/20 last:border-0">
@@ -266,7 +364,7 @@ export default function OwnerDashboard() {
         {totalPages > 1 && (
           <div className="flex items-center justify-between mt-4">
             <p className="text-sm text-on-surface-variant">
-              Showing page {page} of {totalPages} ({logs.length} entries)
+              Showing page {page} of {totalPages} ({filteredLogs.length} entries)
             </p>
             <div className="flex items-center gap-2">
               <button

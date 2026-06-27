@@ -7,6 +7,7 @@ import ProductionTable from '@/components/ui/ProductionTable';
 import { getProductionLogs, ProductionLog, ProductionFilter } from '@/services/production';
 import { getStock } from '@/services/stock';
 import { getUsers } from '@/services/users';
+import { getProducts, Product } from '@/services/products';
 import { getDateRange } from '@/utils/dateHelpers';
 import { exportToExcel, exportToPDF } from '@/utils/export';
 import { User } from '@/store/authStore';
@@ -21,7 +22,11 @@ export default function ManagerDashboard() {
   const [logs, setLogs] = useState<ProductionLog[]>([]);
   const [stock, setStock] = useState<unknown>(null);
   const [workers, setWorkers] = useState<User[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [selectedWorker, setSelectedWorker] = useState('all');
+  const [selectedProduct, setSelectedProduct] = useState('all');
+  const [selectedGender, setSelectedGender] = useState('all');
+  const [selectedSize, setSelectedSize] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 20;
@@ -38,42 +43,78 @@ export default function ManagerDashboard() {
       filter.workerId = selectedWorker;
     }
 
-    const [logsRes, stockRes, workersRes] = await Promise.all([
+    const [logsRes, stockRes, workersRes, productsRes] = await Promise.all([
       getProductionLogs(filter, 1, 200),
       getStock(),
       getUsers(),
+      getProducts(),
     ]);
 
     setLogs(logsRes.logs);
     setStock(stockRes);
     setWorkers(workersRes.filter((w) => w.role === 'worker'));
+    setProducts(productsRes);
     setIsLoading(false);
   }, [period, customDate, selectedWorker]);
 
   useEffect(() => {
     fetchData();
-  }, [fetchData, page]);
+  }, [fetchData]);
 
-  // Calculate stats
-  const totalPairs = logs.reduce((sum, l) => sum + l.quantityPairs, 0);
-  const totalLeather = logs.reduce((sum, l) => sum + l.leatherDeductedSqf, 0);
-  const totalBuckles = logs.reduce((sum, l) => sum + l.buckleDeducted, 0);
-  const totalFootbeds = logs.reduce((sum, l) => sum + l.footbedDeducted, 0);
+  // Extract unique EU sizes from products (filtered by selected gender), fallback to logs
+  const availableSizes = (() => {
+    const extracted = Array.from(
+      new Set(
+        products
+          .filter((p) => selectedGender === 'all' || p.gender === selectedGender)
+          .flatMap((p) => p.sizes || [])
+      )
+    ).sort((a, b) => a - b);
+    if (extracted.length > 0) return extracted;
+    return Array.from(
+      new Set(
+        logs
+          .filter((l) => selectedGender === 'all' || l.gender === selectedGender)
+          .map((l) => l.euSize)
+      )
+    ).sort((a, b) => a - b);
+  })();
 
-  // Calculate breakdown by category
-  const leatherBreakdown = logs.reduce((acc: Record<string, number>, log) => {
+  // Reset size filter if the currently selected size is not available for the selected gender
+  useEffect(() => {
+    if (selectedSize !== 'all' && !availableSizes.includes(Number(selectedSize))) {
+      setSelectedSize('all');
+    }
+  }, [selectedGender, availableSizes, selectedSize]);
+
+  // Client-side filtering of logs
+  const filteredLogs = logs.filter((log) => {
+    const matchesProduct = selectedProduct === 'all' || log.productId === selectedProduct;
+    const matchesGender = selectedGender === 'all' || log.gender === selectedGender;
+    const matchesSize = selectedSize === 'all' || log.euSize.toString() === selectedSize;
+    return matchesProduct && matchesGender && matchesSize;
+  });
+
+  // Calculate stats based on filtered logs
+  const totalPairs = filteredLogs.reduce((sum, l) => sum + l.quantityPairs, 0);
+  const totalLeather = filteredLogs.reduce((sum, l) => sum + l.leatherDeductedSqf, 0);
+  const totalBuckles = filteredLogs.reduce((sum, l) => sum + l.buckleDeducted, 0);
+  const totalFootbeds = filteredLogs.reduce((sum, l) => sum + l.footbedDeducted, 0);
+
+  // Calculate breakdown by category on filtered logs
+  const leatherBreakdown = filteredLogs.reduce((acc: Record<string, number>, log) => {
     const type = log.leatherType || 'Unknown';
     acc[type] = (acc[type] || 0) + log.leatherDeductedSqf;
     return acc;
   }, {});
 
-  const buckleBreakdown = logs.reduce((acc: Record<string, number>, log) => {
+  const buckleBreakdown = filteredLogs.reduce((acc: Record<string, number>, log) => {
     const type = log.buckleType || 'Unknown';
     acc[type] = (acc[type] || 0) + log.buckleDeducted;
     return acc;
   }, {});
 
-  const footbedBreakdown = logs.reduce((acc: Record<string, number>, log) => {
+  const footbedBreakdown = filteredLogs.reduce((acc: Record<string, number>, log) => {
     const key = `${log.footbedGender} EU ${log.footbedEuSize} - ${log.footbedType}`;
     acc[key] = (acc[key] || 0) + log.footbedDeducted;
     return acc;
@@ -82,7 +123,7 @@ export default function ManagerDashboard() {
   const handleExport = (format: 'excel' | 'pdf') => {
     const data = {
       headers: ['Worker', 'Product', 'SKU', 'Gender', 'Size', 'Qty', 'Date'],
-      rows: logs.map((l) => [l.workerName, l.productName, l.sku, l.gender, `EU ${l.euSize}`, l.quantityPairs, l.logDate]),
+      rows: filteredLogs.map((l) => [l.workerName, l.productName, l.sku, l.gender, `EU ${l.euSize}`, l.quantityPairs, l.logDate]),
       filename: `production-log-${period}-${new Date().toISOString().split('T')[0]}`,
       title: `Production Log - ${period.toUpperCase()}`,
     };
@@ -94,9 +135,11 @@ export default function ManagerDashboard() {
     }
   };
 
-  // Client-side pagination
-  const paginatedLogs = logs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const totalPages = Math.ceil(logs.length / PAGE_SIZE);
+
+
+  // Client-side pagination based on filtered logs
+  const paginatedLogs = filteredLogs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.ceil(filteredLogs.length / PAGE_SIZE);
 
   return (
     <div className="space-y-6">
@@ -144,7 +187,7 @@ export default function ManagerDashboard() {
 
       {/* Filters */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full md:w-auto">
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
           <div className="grid grid-cols-2 sm:flex sm:items-center gap-1 p-1 bg-surface-container rounded-lg w-full sm:w-auto">
             {(['today', 'week', 'month'] as Period[]).map((p) => (
               <button
@@ -208,6 +251,38 @@ export default function ManagerDashboard() {
               <option key={w._id} value={w._id}>{w.name}</option>
             ))}
           </select>
+
+          <select
+            value={selectedProduct}
+            onChange={(e) => { setSelectedProduct(e.target.value); setPage(1); }}
+            className="input-field w-full sm:w-auto min-w-[140px]"
+          >
+            <option value="all">All Products</option>
+            {products.map((p) => (
+              <option key={p._id} value={p._id}>{p.name}</option>
+            ))}
+          </select>
+
+          <select
+            value={selectedGender}
+            onChange={(e) => { setSelectedGender(e.target.value); setPage(1); }}
+            className="input-field w-full sm:w-auto min-w-[120px]"
+          >
+            <option value="all">All Genders</option>
+            <option value="Men">Men</option>
+            <option value="Women">Women</option>
+          </select>
+
+          <select
+            value={selectedSize}
+            onChange={(e) => { setSelectedSize(e.target.value); setPage(1); }}
+            className="input-field w-full sm:w-auto min-w-[100px]"
+          >
+            <option value="all">All Sizes</option>
+            {availableSizes.map((s) => (
+              <option key={s} value={s.toString()}>EU {s}</option>
+            ))}
+          </select>
         </div>
 
         <div className="flex items-center gap-2 w-full md:w-auto">
@@ -236,7 +311,7 @@ export default function ManagerDashboard() {
         {totalPages > 1 && (
           <div className="flex items-center justify-between mt-4">
             <p className="text-sm text-on-surface-variant">
-              Page {page} of {totalPages} ({logs.length} entries)
+              Page {page} of {totalPages} ({filteredLogs.length} entries)
             </p>
             <div className="flex items-center gap-2">
               <button

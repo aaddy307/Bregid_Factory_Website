@@ -14,6 +14,13 @@ export default function ManagerCatalogPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
 
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, genderFilter]);
+
   const fetchProducts = async () => {
     setIsLoading(true);
     const result = await getProducts();
@@ -31,6 +38,9 @@ export default function ManagerCatalogPage() {
     const matchesGender = genderFilter === 'all' || p.gender === genderFilter;
     return matchesSearch && matchesGender && p.isActive;
   });
+
+  const paginatedProducts = filteredProducts.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.ceil(filteredProducts.length / PAGE_SIZE);
 
   const handleDelete = async (product: Product) => {
     if (!window.confirm(`Delete "${product.name}"? This will deactivate the product.`)) return;
@@ -100,61 +110,89 @@ export default function ManagerCatalogPage() {
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {filteredProducts.map((product) => (
-            <div key={product._id} className="card-hover p-4 lg:p-5">
-              <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-1">
-                    <h3 className="font-semibold text-on-surface truncate">{product.name}</h3>
-                    <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider flex-shrink-0 ${
-                      product.gender === 'Men' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'
-                    }`}>
-                      {product.gender === 'Men' ? 'MEN' : 'WOMEN'}
-                    </span>
-                  </div>
-                  <p className="text-xs text-on-surface-variant font-mono mb-2">{product.sku}</p>
-
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {(product.sizes || []).map((size) => (
-                      <span key={size} className="inline-block px-2 py-0.5 bg-surface-variant rounded text-xs text-on-surface">
-                        {formatEURSize(size)}
+        <div className="space-y-4">
+          <div className="space-y-3">
+            {paginatedProducts.map((product) => (
+              <div key={product._id} className="card-hover p-4 lg:p-5">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-1">
+                      <h3 className="font-semibold text-on-surface truncate">{product.name}</h3>
+                      <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider flex-shrink-0 ${
+                        product.gender === 'Men' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'
+                      }`}>
+                        {product.gender === 'Men' ? 'MEN' : 'WOMEN'}
                       </span>
-                    ))}
+                    </div>
+                    <p className="text-xs text-on-surface-variant font-mono mb-2">{product.sku}</p>
+
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {(product.sizes || []).map((size) => (
+                        <span key={size} className="inline-block px-2 py-0.5 bg-surface-variant rounded text-xs text-on-surface">
+                          {formatEURSize(size)}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="flex flex-wrap gap-3 text-xs text-on-surface-variant">
+                      {product.leatherSqfPerPair > 0 && (
+                        <span>Leather: {product.leatherSqfPerPair} sqf/pair</span>
+                      )}
+                      {product.bucklePerPair > 0 && (
+                        <span>Buckles: {product.bucklePerPair}/pair</span>
+                      )}
+                      {product.footbedPerPair > 0 && (
+                        <span>Footbed: {product.footbedPerPair}/pair</span>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-3 text-xs text-on-surface-variant">
-                    {product.leatherSqfPerPair > 0 && (
-                      <span>Leather: {product.leatherSqfPerPair} sqf/pair</span>
-                    )}
-                    {product.bucklePerPair > 0 && (
-                      <span>Buckles: {product.bucklePerPair}/pair</span>
-                    )}
-                    {product.footbedPerPair > 0 && (
-                      <span>Footbed: {product.footbedPerPair}/pair</span>
-                    )}
+                  <div className="flex items-center gap-2 ml-4 flex-shrink-0">
+                    <button
+                      onClick={() => { setEditProduct(product); setShowAddModal(true); }}
+                      className="p-2 rounded-lg hover:bg-surface-container transition-colors"
+                      title="Edit product"
+                    >
+                      <Edit3 size={16} className="text-on-surface-variant" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(product)}
+                      className="p-2 rounded-lg hover:bg-error/5 transition-colors"
+                      title="Delete product"
+                    >
+                      <Trash2 size={16} className="text-error" />
+                    </button>
                   </div>
-                </div>
-
-                <div className="flex items-center gap-2 ml-4 flex-shrink-0">
-                  <button
-                    onClick={() => { setEditProduct(product); setShowAddModal(true); }}
-                    className="p-2 rounded-lg hover:bg-surface-container transition-colors"
-                    title="Edit product"
-                  >
-                    <Edit3 size={16} className="text-on-surface-variant" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(product)}
-                    className="p-2 rounded-lg hover:bg-error/5 transition-colors"
-                    title="Delete product"
-                  >
-                    <Trash2 size={16} className="text-error" />
-                  </button>
                 </div>
               </div>
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between p-4 bg-factory-white rounded-xl border border-outline-variant/30 mt-4">
+              <p className="text-sm text-on-surface-variant">
+                Page {page} of {totalPages} ({filteredProducts.length} products)
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="btn-secondary text-sm px-3 py-1.5"
+                >
+                  Previous
+                </button>
+                <span className="text-sm text-on-surface-variant font-medium">{page}</span>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="btn-secondary text-sm px-3 py-1.5"
+                >
+                  Next
+                </button>
+              </div>
             </div>
-          ))}
+          )}
         </div>
       )}
 
